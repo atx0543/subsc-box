@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="サブスクBOX - スマートで洗練されたサブスク管理アプリ。AI、音楽、画像、Amazonなどの利用料を可視化。">
+  <title>サブスクBOX | スマートサブスクリプション管理</title>
+  
+  <!-- CSS Stylesheets -->
+ <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Extra neon background glows -->
+  <div class="bg-glow-purple"></div>
+  <div class="bg-glow-blue"></div>
+
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="glass-panel">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i data-lucide="box"></i>
+        </div>
+        <div>
+          <h1>サブスクBOX</h1>
+          <p style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; margin-top: -0.25rem;">
+            スマート・サブスクリプション・マネージャー
+          </p>
+        </div>
+      </div>
+      
+      <!-- Backup Actions -->
+      <div class="header-actions">
+        <div class="exchange-rate-badge" id="exchange-rate-display" style="display: none;">
+          <i data-lucide="globe"></i>
+          <span>USD/JPY: --.-</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-export">
+          <i data-lucide="download"></i>バックアップ保存
+        </button>
+        <label class="btn btn-secondary btn-sm" style="cursor: pointer;">
+          <i data-lucide="upload"></i>データ読込
+          <input type="file" id="import-file" accept=".json" style="display: none;">
+        </label>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Grid -->
+    <main class="dashboard-grid">
+      
+      <!-- Left Column: KPI Stats, Chart, & Forms -->
+      <section class="sidebar-panel">
+        
+        <!-- KPI Cards -->
+        <div class="kpi-container">
+          <div class="glass-panel kpi-card">
+            <div class="kpi-label">
+              <span>今月の支払合計</span>
+              <i data-lucide="calendar" style="color: var(--color-other); width: 18px; height: 18px;"></i>
+            </div>
+            <div class="kpi-value" id="total-monthly">¥0<span>/ 月</span></div>
+          </div>
+          
+          <div class="glass-panel kpi-card annual">
+            <div class="kpi-label">
+              <span>年間の支払合計</span>
+              <i data-lucide="trending-up" style="color: var(--color-ai); width: 18px; height: 18px;"></i>
+            </div>
+            <div class="kpi-value" id="total-annual">¥0<span>/ 年</span></div>
+          </div>
+        </div>
+
+        <!-- SVG Donut Chart Breakdown -->
+        <div class="glass-panel chart-panel">
+          <div class="chart-header">
+            <i data-lucide="pie-chart" style="color: var(--color-ai); width: 18px; height: 18px;"></i>
+            <span>カテゴリー別支出割合</span>
+          </div>
+          
+          <div class="chart-container">
+            <svg class="donut-svg" viewBox="0 0 100 100">
+              <circle class="donut-hole" cx="50" cy="50" r="40"></circle>
+              <circle class="donut-ring" cx="50" cy="50" r="40"></circle>
+            </svg>
+            <div class="chart-center-text">
+              <div class="chart-center-value" id="chart-center-value">¥0</div>
+              <div class="chart-center-label">月額換算</div>
+            </div>
+          </div>
+          
+          <div id="chart-no-data" style="display: none; font-size: 0.85rem; color: var(--text-muted); margin: 2rem 0; text-align: center;">
+            有効なサブスクリプションを登録すると比率が表示されます。
+          </div>
+          
+          <div class="chart-legend">
+            <!-- Dynamically populated legends -->
+          </div>
+        </div>
+
+        <!-- Subscription Insertion Form -->
+        <div class="glass-panel form-panel">
+          <div class="form-title">
+            <i data-lucide="plus-circle" style="color: var(--color-active); width: 20px; height: 20px;"></i>
+            <span>サブスクの新規登録</span>
+          </div>
+          
+          <!-- Add mode switch (Preset catalog vs Custom handwritten) -->
+          <div class="mode-toggle">
+            <button type="button" class="mode-btn active" id="mode-preset">
+              <i data-lucide="grid" style="width: 14px; height: 14px;"></i>プリセット選択
+            </button>
+            <button type="button" class="mode-btn" id="mode-custom">
+              <i data-lucide="pen-tool" style="width: 14px; height: 14px;"></i>手書き・自由入力
+            </button>
+          </div>
+
+          <form id="add-subscription-form">
+            
+            <!-- Preset Catalog selection wrapper -->
+            <div id="add-preset-area">
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 500;">
+                  人気のサブスクカタログ（料金調査済み）
+                </label>
+                <input type="text" id="preset-search-input" placeholder="カタログ内を検索 (例: Netflix, Prime)..." style="padding: 0.5rem 0.75rem; font-size: 0.85rem; margin-bottom: 0.5rem; background: rgba(0,0,0,0.3);">
+              </div>
+              <div class="presets-grid" id="presets-grid">
+                <!-- Dynamically populated presets -->
+              </div>
+            </div>
+
+            <!-- Custom Form (Handwritten/自由入力) -->
+            <div id="add-custom-area" style="display: none;">
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <label for="custom-name" style="margin-bottom: 0;">サービス名 <span style="color: var(--color-danger)">*</span></label>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-web-search-price" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">
+                    <i data-lucide="search" style="width: 12px; height: 12px;"></i>ネットで料金を検索
+                  </button>
+                </div>
+                <input type="text" id="custom-name" placeholder="例: ひかり回線, Adobe CC">
+              </div>
+
+              <div class="form-group">
+                <label for="custom-category">カテゴリー</label>
+                <select id="custom-category">
+                  <option value="ai">AI関係</option>
+                  <option value="music">音楽</option>
+                  <option value="video">画像</option>
+                  <option value="amazon">アマゾン</option>
+                  <option value="other" selected>その他</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <label for="custom-price" style="margin-bottom: 0;">料金（税込） <span style="color: var(--color-danger)">*</span></label>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-custom-calc" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">
+                    <i data-lucide="calculator" style="width: 12px; height: 12px;"></i>簡易電卓を開く
+                  </button>
+                </div>
+                <div class="input-row" style="grid-template-columns: 80px 1fr 100px; gap: 0.5rem;">
+                  <select id="custom-currency" style="padding: 0.75rem 0.5rem;">
+                    <option value="jpy" selected>円 (¥)</option>
+                    <option value="usd">ドル ($)</option>
+                  </select>
+                  <input type="number" id="custom-price" placeholder="料金" min="0">
+                  <select id="custom-cycle">
+                    <option value="monthly" selected>月会費</option>
+                    <option value="annual">年会費</option>
+                  </select>
+                </div>
+                <div id="custom-usd-note" style="display: none; font-size: 0.75rem; color: var(--color-ai); margin-top: 0.35rem; margin-bottom: 0.25rem;">
+                  ※ 1ドル ＝ 150円（目安レート）で円換算します。
+                </div>
+                
+                <!-- Inline Custom Calculator -->
+                <div class="glass-panel calc-popover" id="custom-calc-popover" style="display: none; margin-top: 0.5rem; padding: 0.75rem; border-radius: 8px;">
+                  <div class="calc-display" style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px; text-align: right; font-family: monospace; font-size: 1.1rem; margin-bottom: 0.5rem; height: 32px; overflow: hidden; line-height: 24px; color: white;">0</div>
+                  <div class="calc-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.25rem;">
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="C">C</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="back">⌫</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="/">/</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="*">*</button>
+                    
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="7">7</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="8">8</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="9">9</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="-">-</button>
+                    
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="4">4</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="5">5</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="6">6</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="+">+</button>
+                    
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="1">1</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="2">2</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="3">3</button>
+                    <button type="button" class="calc-btn btn btn-primary btn-sm" style="grid-row: span 2; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; padding: 0.25rem;" data-val="=">=</button>
+                    
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="grid-column: span 2; padding: 0.25rem; font-size: 0.8rem;" data-val="0">0</button>
+                    <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val=".">.</button>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm btn-full" id="btn-custom-calc-apply" style="margin-top: 0.5rem; font-size: 0.8rem; padding: 0.35rem;">計算結果を入力する</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="custom-note">メモ（任意）</label>
+                <input type="text" id="custom-note" placeholder="例: 毎月25日引落し">
+              </div>
+
+              <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="checkbox" id="custom-pinned" style="width: auto; cursor: pointer; margin-right: 0.25rem;">
+                <label for="custom-pinned" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary);">
+                  このサブスクリプションをピン留め（最上部に固定）
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1rem;">
+              <i data-lucide="plus"></i>サブスクを追加する
+            </button>
+          </form>
+        </div>
+      </section>
+      
+      <!-- Right Column: Filters and Cards List -->
+      <section class="main-panel">
+        
+        <div class="list-header">
+          <div class="list-title">
+            <i data-lucide="layers" style="color: var(--color-other); width: 20px; height: 20px;"></i>
+            <span>登録済みのサブスク一覧</span>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="サービス名、料金（金額）、またはメモで検索...">
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar" id="filter-bar">
+          <!-- Dynamically populated filter tabs -->
+        </div>
+
+        <!-- Subscriptions Cards grid -->
+        <div class="subsc-cards-grid" id="subsc-cards">
+          <!-- Dynamically populated cards -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Edit/Modify Subscription Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="glass-panel modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i data-lucide="edit-3" style="color: var(--color-edit); width: 22px; height: 22px;"></i>
+          <span>サブスクの修正</span>
+        </h2>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      
+      <form id="edit-subscription-form">
+        <input type="hidden" id="edit-id">
+        
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label for="edit-name" style="margin-bottom: 0;">サービス名 <span style="color: var(--color-danger)">*</span></label>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-edit-web-search-price" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">
+              <i data-lucide="search" style="width: 12px; height: 12px;"></i>ネットで料金を検索
+            </button>
+          </div>
+          <input type="text" id="edit-name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-category">カテゴリー</label>
+          <select id="edit-category">
+            <option value="ai">AI関係</option>
+            <option value="music">音楽</option>
+            <option value="video">画像</option>
+            <option value="amazon">アマゾン</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label for="edit-price" style="margin-bottom: 0;">料金（税込） <span style="color: var(--color-danger)">*</span></label>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-edit-calc" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">
+              <i data-lucide="calculator" style="width: 12px; height: 12px;"></i>簡易電卓を開く
+            </button>
+          </div>
+          <div class="input-row" style="grid-template-columns: 80px 1fr 100px; gap: 0.5rem;">
+            <select id="edit-currency" style="padding: 0.75rem 0.5rem;">
+              <option value="jpy" selected>円 (¥)</option>
+              <option value="usd">ドル ($)</option>
+            </select>
+            <input type="number" id="edit-price" min="0" required>
+            <select id="edit-cycle">
+              <option value="monthly">月会費</option>
+              <option value="annual">年会費</option>
+            </select>
+          </div>
+          <div id="edit-usd-note" style="display: none; font-size: 0.75rem; color: var(--color-ai); margin-top: 0.35rem; margin-bottom: 0.25rem;">
+            ※ 1ドル ＝ 150円（目安レート）で円換算します。
+          </div>
+          
+          <!-- Inline Edit Calculator -->
+          <div class="glass-panel calc-popover" id="edit-calc-popover" style="display: none; margin-top: 0.5rem; padding: 0.75rem; border-radius: 8px;">
+            <div class="calc-display" style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px; text-align: right; font-family: monospace; font-size: 1.1rem; margin-bottom: 0.5rem; height: 32px; overflow: hidden; line-height: 24px; color: white;">0</div>
+            <div class="calc-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.25rem;">
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="C">C</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="back">⌫</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="/">/</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="*">*</button>
+              
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="7">7</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="8">8</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="9">9</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="-">-</button>
+              
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="4">4</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="5">5</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="6">6</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="+">+</button>
+              
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="1">1</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="2">2</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val="3">3</button>
+              <button type="button" class="calc-btn btn btn-primary btn-sm" style="grid-row: span 2; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; padding: 0.25rem;" data-val="=">=</button>
+              
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="grid-column: span 2; padding: 0.25rem; font-size: 0.8rem;" data-val="0">0</button>
+              <button type="button" class="calc-btn btn btn-secondary btn-sm" style="padding: 0.25rem; font-size: 0.8rem;" data-val=".">.</button>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm btn-full" id="btn-edit-calc-apply" style="margin-top: 0.5rem; font-size: 0.8rem; padding: 0.35rem;">計算結果を入力する</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-note">メモ（任意）</label>
+          <input type="text" id="edit-note">
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+          <input type="checkbox" id="edit-pinned" style="width: auto; cursor: pointer; margin-right: 0.25rem;">
+          <label for="edit-pinned" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary);">
+            このサブスクリプションをピン留め（最上部に固定）
+          </label>
+        </div>
+
+        <div class="modal-footer" style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-danger" id="modal-delete-btn">
+            <i data-lucide="trash-2"></i> 削除する
+          </button>
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary" id="modal-cancel-btn">キャンセル</button>
+            <button type="submit" class="btn btn-primary">変更を保存</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Delete Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; margin-bottom: 1rem;">
+        <h2 class="modal-title" style="color: var(--color-danger); gap: 0.5rem;">
+          <i data-lucide="alert-triangle" style="color: var(--color-danger); width: 24px; height: 24px;"></i>
+          <span>削除の確認</span>
+        </h2>
+      </div>
+      <p style="font-size: 0.95rem; margin-bottom: 1.5rem; color: var(--text-primary);" id="confirm-modal-text">
+        このサブスクリプションを削除してよろしいですか？
+      </p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button type="button" class="btn btn-secondary" id="confirm-cancel-btn" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">キャンセル</button>
+        <button type="button" class="btn btn-danger" id="confirm-ok-btn" style="padding: 0.5rem 1.5rem; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+          <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i> 削除する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Icons Library (Lightweight SVG) -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+  <!-- Application JS Code -->
+  <script src="app.js"></script>
+</body>
+</html>
