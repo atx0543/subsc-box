@@ -61,6 +61,7 @@
               <i data-lucide="calendar" style="color: var(--color-other); width: 18px; height: 18px;"></i>
             </div>
             <div class="kpi-value" id="total-monthly">¥0<span>/ 月</span></div>
+            <div id="monthly-subscription-count" style="margin-top: 0.35rem; font-size: 0.9rem; color: var(--text-secondary); font-weight: 700;">0件登録</div>
           </div>
           
           <div class="glass-panel kpi-card annual">
@@ -395,6 +396,44 @@
 
   <!-- Lucide Icons Library (Lightweight SVG) -->
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+  <!-- Subscription Count Patch -->
+  <script>
+    // 登録済みサブスク一覧に表示されたカード数だけを数えます。
+    // プリセット候補や画面内の他の要素は数えません。
+    (function () {
+      function updateSubscriptionCount() {
+        var countEl = document.getElementById('monthly-subscription-count');
+        var listEl = document.getElementById('subsc-cards');
+        if (!countEl || !listEl) return;
+
+        var cards = Array.prototype.filter.call(listEl.children, function (el) {
+          if (!el || el.nodeType !== 1) return false;
+          if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return false;
+          if (el.classList && el.classList.contains('empty-state')) return false;
+          var text = (el.textContent || '').trim();
+          if (!text) return false;
+          return true;
+        });
+
+        countEl.textContent = cards.length + '件登録';
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        updateSubscriptionCount();
+
+        var listEl = document.getElementById('subsc-cards');
+        if (listEl && window.MutationObserver) {
+          var observer = new MutationObserver(updateSubscriptionCount);
+          observer.observe(listEl, { childList: true, subtree: false });
+        }
+
+        setTimeout(updateSubscriptionCount, 100);
+        setTimeout(updateSubscriptionCount, 500);
+        setTimeout(updateSubscriptionCount, 1000);
+      });
+    })();
+  </script>
+
   <!-- Application JS Code -->
   <script src="js/app.js"></script>
 </body>
