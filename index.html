@@ -7,7 +7,7 @@
   <title>サブスクBOX | スマートサブスクリプション管理</title>
   
   <!-- CSS Stylesheets -->
-<link rel="stylesheet" href="style.css">
+ <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -61,6 +61,9 @@
               <i data-lucide="calendar" style="color: var(--color-other); width: 18px; height: 18px;"></i>
             </div>
             <div class="kpi-value" id="total-monthly">¥0<span>/ 月</span></div>
+            <div id="total-monthly-count" style="margin-top: 0.35rem; font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
+              0件登録
+            </div>
           </div>
           
           <div class="glass-panel kpi-card annual">
@@ -396,6 +399,122 @@
   <!-- Lucide Icons Library (Lightweight SVG) -->
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
   <!-- Application JS Code -->
-  <script src="app.js"></script>
+  <script src="js/app.js"></script>
+
+
+
+  <!-- Monthly registered subscription count patch: original app.js is untouched -->
+  <script>
+    (function () {
+      'use strict';
+
+      const countDisplay = document.getElementById('total-monthly-count');
+      const cardsContainer = document.getElementById('subsc-cards');
+
+      if (!countDisplay) return;
+
+      function isVisible(element) {
+        if (!element) return false;
+        const style = window.getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      }
+
+      function isRealSubscriptionCard(card) {
+        if (!card || card.nodeType !== 1 || !isVisible(card)) return false;
+
+        const text = (card.textContent || '').trim();
+        if (!text) return false;
+
+        // 空データや検索結果なしの案内カードは件数に含めない
+        if (
+          text.includes('登録すると') ||
+          text.includes('見つかりません') ||
+          text.includes('該当') ||
+          text.includes('データがありません')
+        ) {
+          return false;
+        }
+
+        // 登録済み一覧のカードだけを数える
+        if (card.classList.contains('subsc-card')) return true;
+        if (card.querySelector('[data-id], .card-actions, .subsc-card-title, .subscription-name')) return true;
+
+        // 料金表示を持つ一覧カードを拾う保険
+        if (/¥|円|\$/.test(text) && card.querySelector('button')) return true;
+
+        return false;
+      }
+
+      function countFromCards() {
+        if (!cardsContainer) return 0;
+
+        const directCards = Array.from(cardsContainer.children).filter(isRealSubscriptionCard);
+        if (directCards.length > 0) return directCards.length;
+
+        // app.js側でカードを内側に包む構造でも拾えるようにする
+        const nestedCards = Array.from(cardsContainer.querySelectorAll('.subsc-card, [data-id]'))
+          .filter(isRealSubscriptionCard);
+
+        return nestedCards.length;
+      }
+
+      function countFromKnownStorageKeys() {
+        // プリセットカタログを数えないため、全localStorage走査はしない
+        const keys = [
+          'subscriptions',
+          'subscSubscriptions',
+          'subsc-box-subscriptions',
+          'subscBoxSubscriptions',
+          'subscriptionData'
+        ];
+
+        for (const key of keys) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const data = JSON.parse(raw);
+            if (Array.isArray(data)) return data.length;
+          } catch (error) {
+            // 読めないキーは無視
+          }
+        }
+
+        return null;
+      }
+
+      function updateMonthlyCount() {
+        const cardCount = countFromCards();
+        const storageCount = countFromKnownStorageKeys();
+        const count = cardCount || storageCount || 0;
+        countDisplay.textContent = count + '件登録';
+      }
+
+      document.addEventListener('DOMContentLoaded', updateMonthlyCount);
+      window.addEventListener('load', updateMonthlyCount);
+      window.addEventListener('storage', updateMonthlyCount);
+
+      if (cardsContainer) {
+        const observer = new MutationObserver(updateMonthlyCount);
+        observer.observe(cardsContainer, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['style', 'class', 'data-id']
+        });
+      }
+
+      document.addEventListener('click', function () {
+        setTimeout(updateMonthlyCount, 50);
+      });
+
+      document.addEventListener('input', function () {
+        setTimeout(updateMonthlyCount, 50);
+      });
+
+      setTimeout(updateMonthlyCount, 100);
+      setTimeout(updateMonthlyCount, 500);
+      setTimeout(updateMonthlyCount, 1000);
+    })();
+  </script>
 </body>
 </html>
